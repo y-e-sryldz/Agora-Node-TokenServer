@@ -71,6 +71,3 @@ app.get('/access_token', nocache, generateAccessToken);
 app.listen(PORT, () => {
   console.log(`✅ Agora Token Server is running on port ${PORT}`);
 });
-
-  console.log(`Listening on port: ${PORT}`);
-});
