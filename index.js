@@ -8,49 +8,69 @@ const APP_CERTIFICATE = process.env.APP_CERTIFICATE;
 
 const app = express();
 
-const nocache = (req, resp, next) => {
-  resp.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
-  resp.header('Expires', '-1');
-  resp.header('Pragma', 'no-cache');
-  next();
-}
+// Root endpoint - sağlıklı çalıştığını kontrol etmek için
+app.get('/', (req, res) => {
+  res.send('✅ Agora Token Server is running 🚀');
+});
 
-const generateAccessToken = (req, resp) => {
-  // set response header
-  resp.header('Acess-Control-Allow-Origin', '*');
-  // get channel name
+// No-cache middleware
+const nocache = (req, res, next) => {
+  res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  res.header('Expires', '-1');
+  res.header('Pragma', 'no-cache');
+  next();
+};
+
+// Generate Agora access token
+const generateAccessToken = (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+
   const channelName = req.query.channelName;
   if (!channelName) {
-    return resp.status(500).json({ 'error': 'channel is required' });
+    return res.status(400).json({ error: 'channelName is required' });
   }
-  // get uid 
+
   let uid = req.query.uid;
-  if(!uid || uid == '') {
+  if (!uid || uid === '') {
     uid = 0;
+  } else {
+    uid = parseInt(uid, 10);
   }
-  // get role
+
   let role = RtcRole.SUBSCRIBER;
-  if (req.query.role == 'publisher') {
+  if (req.query.role === 'publisher') {
     role = RtcRole.PUBLISHER;
   }
-  // get the expire time
+
   let expireTime = req.query.expireTime;
-  if (!expireTime || expireTime == '') {
+  if (!expireTime || expireTime === '') {
     expireTime = 3600;
   } else {
     expireTime = parseInt(expireTime, 10);
   }
-  // calculate privilege expire time
+
   const currentTime = Math.floor(Date.now() / 1000);
   const privilegeExpireTime = currentTime + expireTime;
-  // build the token
-  const token = RtcTokenBuilder.buildTokenWithUid(APP_ID, APP_CERTIFICATE, channelName, uid, role, privilegeExpireTime);
-  // return the token
-  return resp.json({ 'token': token });
-}
 
+  const token = RtcTokenBuilder.buildTokenWithUid(
+    APP_ID,
+    APP_CERTIFICATE,
+    channelName,
+    uid,
+    role,
+    privilegeExpireTime
+  );
+
+  return res.json({ token });
+};
+
+// Routes
 app.get('/access_token', nocache, generateAccessToken);
 
+// Start server
 app.listen(PORT, () => {
+  console.log(`✅ Agora Token Server is running on port ${PORT}`);
+});
+
   console.log(`Listening on port: ${PORT}`);
 });
